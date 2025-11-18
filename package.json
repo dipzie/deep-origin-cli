@@ -1,0 +1,56 @@
+{
+  "name": "deep-origin-cli",
+  "version": "1.0.1",
+  "description": "Deep Origin CLI — Free Tier Project Intelligence Engine",
+  "type": "module",
+  "bin": {
+    "origin": "./bin/origin.js"
+  },
+  "scripts": {
+    "start": "node bin/origin.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "fs-extra": "^11.2.0",
+    "nanoid": "^5.0.2"
+  },
+  "keywords": [
+    "origin",
+    "deep-origin",
+    "dipz",
+    "dipz-origin",
+    "devtools",
+    "developer-tools",
+    "cli-tool",
+    "cli",
+    "project-intelligence",
+    "project-audit",
+    "project-structure",
+    "code-audit",
+    "structural-analysis",
+    "project-scanner",
+    "project-inspector",
+    "project-analyzer",
+    "code-analysis",
+    "code-quality",
+    "static-analysis",
+    "ai-devtools",
+    "ai-assisted",
+    "ai-code-tools",
+    "developer-assistant",
+    "dev-assistant",
+    "workflow-tools",
+    "productivity-tools",
+    "refactor-tools",
+    "clean-code",
+    "engineering-tools",
+    "backend-tools",
+    "frontend-tools",
+    "fullstack-tools",
+    "node-cli",
+    "nodejs-cli"
+  ],
+  "author": "Dipz",
+  "license": "MIT"
+}
