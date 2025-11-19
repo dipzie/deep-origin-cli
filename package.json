@@ -1,19 +1,26 @@
 {
   "name": "deep-origin-cli",
-  "version": "1.0.4",
+  "version": "2.2.8",
   "description": "Deep Origin CLI — Free Tier Project Intelligence Engine",
   "type": "module",
   "bin": {
     "origin": "./bin/origin.js"
   },
+  "main": "./bin/origin.js",
+  "files": [
+    "bin/",
+    "core/",
+    "README.md"
+  ],
   "scripts": {
-    "start": "node bin/origin.js",
+    "start": "node ./bin/origin.js",
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
     "commander": "^12.1.0",
     "fs-extra": "^11.2.0",
-    "nanoid": "^5.0.2"
+    "nanoid": "^5.0.2",
+    "picocolors": "^1.1.1"
   },
   "keywords": [
     "origin",
@@ -52,5 +59,16 @@
     "nodejs-cli"
   ],
   "author": "Dipz",
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": "https://www.npmjs.com/package/deep-origin-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dipzie/deep-origin-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dipzie/deep-origin-cli/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

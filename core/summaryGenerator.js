@@ -1,245 +1,145 @@
-//core/summaryGenerator.js
-
-import fs from "fs-extra";
-import path from "path";
-
-/**
- * ----------------------------------------------------------------------
- * Origin Free Tier — Summary Generator (Lite Mode v1.1)
- * ----------------------------------------------------------------------
+/*
+ * ─────────────────────────────────────────────────────────────
+ *                       ORIGIN LITE MODE
+ *                       INTERNAL MODULE
+ * ─────────────────────────────────────────────────────────────
  *
- * This module is part of Origin's Presentation Layer pipeline.
- * It transforms raw structural introspection outputs into a normalized,
- * human-readable artifact intended for end-user consumption.
+ *  WARNING:
+ *  This file is part of Origin Lite Mode’s internal scanning
+ *  engine. It is not a public API and not designed for reuse,
+ *  modification, or redistribution.
  *
- * NOTE FOR INTERNAL ENGINEERS:
- * - This layer intentionally exposes *only* Lite intelligence.
- * - Do NOT integrate Pro-tier evaluators inside this module.
- * - Output must remain deterministic and free of heavy computation.
- * - All advanced intelligence flows belong to the Server Pipeline.
+ *  Changing, copying, or altering this file may cause:
+ *    • auditEngine failure
+ *    • incorrect scan results
+ *    • unstable CLI behavior
+ *    • loss of Lite Mode protections
+ *    • invalid preview generation
  *
- * This file acts as a facade — orchestrating data shaping, fallback
- * heuristics, and UX-friendly context based on minimal project metadata.
+ *  The full, stable, and extended scanning engine is available
+ *  ONLY in Origin Pro. Lite Mode contains intentionally limited
+ *  and obfuscated logic for security and upgrade protection.
  *
- * ----------------------------------------------------------------------
+ *  Proceed at your own risk. This module is NOT considered a
+ *  stable API surface and may break without notice.
+ *
+ *  © Dipz Origin — Protected Internal Logic
+ * ─────────────────────────────────────────────────────────────
  */
-export async function generateBridgeSummary(projectDir, drift = {}) {
-  const aiDir = path.join(projectDir, "docs", "ai");
-  await fs.ensureDir(aiDir);
 
-  // --- Fetching upstream artifacts ------------------------------------
-  // These files are produced by upstream pipeline components.
-  // If any artifact is missing, Lite Mode gracefully degrades.
-  const bridge = safeRead(path.join(aiDir, "bridge.json"));
-  const flow = safeRead(path.join(aiDir, "flow_state.json"));
-  const rhythm = safeRead(path.join(aiDir, "rhythm_summary.json"));
-  const reflection = safeRead(path.join(aiDir, "latest_reflection.json"));
+// ===========================================================
+// HEALTH SCORE CALCULATOR (Lite Mode Simple Version)
+// ===========================================================
+export function computeHealthScore({ features, ui, hints, framework }) {
+  let score = 100;
 
-  const md = [];
+  if (!framework) score -= 20;
+  if (hints.length > 0) score -= Math.min(20, hints.length * 5);
+  if (features.length === 0) score -= 10;
+  if (ui.length === 0) score -= 10;
 
-  // --- HEADER ----------------------------------------------------------
-  md.push(`# 🤖 Origin Bridge Summary (Free Tier — Lite Mode v1.1)`);
-  md.push(`Generated: **${new Date().toISOString()}**`);
-  md.push(``);
-
-  // --- REFLECTION ------------------------------------------------------
-  md.push(`## 📝 Latest Reflection`);
-  md.push(
-    reflection?.reflection ? `> _${reflection.reflection}_` : `_None recorded_`
-  );
-  md.push(``);
-
-  // --- FLOW STATE ------------------------------------------------------
-  md.push(`## 🌊 Flow State`);
-  md.push(`- Mode: **${flow?.mode || "REFLECTION"}**`);
-  md.push(`- Time: ${flow?.time || "—"}`);
-  md.push(``);
-
-  // --- RHYTHM ----------------------------------------------------------
-  md.push(`## ⏱ Coding Rhythm`);
-  if (rhythm?.hours) {
-    const peakHour = rhythm.hours.indexOf(Math.max(...rhythm.hours));
-    md.push(`- Strongest Hour: **${peakHour}:00**`);
-  } else {
-    // intentionally minimal — rhythm requires temporal density
-    md.push(`_No rhythm data yet_`);
-  }
-  md.push(``);
-
-  // --- CORE LITE ANALYSIS PIPELINE ------------------------------------
-  // This subroutine computes a conceptualized structural abstraction
-  // of the project based on surface-level file topology only.
-  const tiny = detectTinyProject(projectDir);
-  const lite = generateLiteAnalysis(tiny, drift);
-
-  md.push(`## 📁 Project Overview (Lite Mode ${lite.level})`);
-  md.push(lite.overview);
-  md.push(``);
-
-  // --- DRIFT -----------------------------------------------------------
-  md.push(`## 🔍 Drift Analysis`);
-  if (lite.driftChanges.length > 0) {
-    lite.driftChanges.forEach((line) => md.push(`- ${line}`));
-  } else {
-    // Drift absence is valid; no action required.
-    md.push(`_No structural drift detected_`);
-  }
-  md.push(``);
-
-  // --- INSIGHTS --------------------------------------------------------
-  md.push(`## 💡 Insights`);
-  lite.insights.forEach((line) => md.push(`- ${line}`));
-  md.push(``);
-
-  // --- FORWARD PROGRESSION --------------------------------------------
-  md.push(`## 🚀 Next Step`);
-  md.push(lite.nextStep);
-  md.push(``);
-
-  // --- PRO TIER PREVIEW ------------------------------------------------
-  // Do NOT reveal internal graph evaluators or Pro-tier scoring logic.
-  // This preview is intentionally high-level.
-  md.push(`## 🔒 Pro Tier Preview`);
-  md.push(`The Pro Tier unlocks full intelligence including:`);
-  md.push(`- Architecture Graphs`);
-  md.push(`- Drift Timeline`);
-  md.push(`- Dependency Maps`);
-  md.push(`- Complexity Scores`);
-  md.push(`- Feature Module Diagrams`);
-  md.push(`- AI Bridge v2 (Complete Structure Export)`);
-  md.push(``);
-  md.push(`_Free Tier shows Lite Mode. Pro reveals the full Origin Brain._`);
-  md.push(``);
-
-  // --- FOOTER ----------------------------------------------------------
-  md.push(`---`);
-  md.push(`_Generated by Origin Free Tier_`);
-
-  await fs.writeFile(path.join(aiDir, "bridge_summary.md"), md.join("\n"));
+  if (score < 0) score = 0;
+  return score;
 }
 
-/**
- * ----------------------------------------------------------------------
- * Backward-Compatible Orchestration Wrapper
- * (Required by legacy audit pipeline)
- * ----------------------------------------------------------------------
- */
-export async function generateSummaryV3(projectDir, latestDrift = {}) {
-  return generateBridgeSummary(projectDir, latestDrift);
+// ===========================================================
+// MARKDOWN SUMMARY (Lite Mode)
+// ===========================================================
+export function generateSummary({
+  project,
+  files,
+  framework,
+  components,
+  pages,
+  features,
+  ui,
+  hints,
+  backendExists,
+  relationships,
+  relationshipsTotal,
+  duplicates,
+  deadFiles,
+  unusedDeps,
+  timestamp,
+}) {
+  const more = (arr, previewCount) =>
+    arr.length > previewCount ? `+${arr.length - previewCount} more (Pro)` : "";
+
+  return `
+# Origin Lite Summary
+
+Generated: ${timestamp}
+
+## Overview
+Project: **${project}**
+Files scanned: **${files.length}**
+Framework: **${framework}**
+
+---
+
+## Components (Preview)
+${components.slice(0, 10).join("\n")}
+${more(components, 10)}
+
+## Pages (Preview)
+${pages.slice(0, 10).join("\n")}
+${more(pages, 10)}
+
+## Features (Preview)
+${features.slice(0, 10).join("\n")}
+${more(features, 10)}
+
+## UI System
+${ui.length ? ui.map((u) => `- ${u}`).join("\n") : "None detected"}
+
+${
+  backendExists
+    ? `
+## Backend (Preview)
+Detected backend folder — Lite Mode does not scan backend yet.
+(Full backend analysis available in a future update.)
+
+---`
+    : ""
 }
 
-/**
- * ----------------------------------------------------------------------
- * Structural Introspection — Tiny Project Detector
- *
- * Computes a shallow topology map of the project. This function must
- * remain side-effect-free to preserve audit determinism.
- * ----------------------------------------------------------------------
- */
-function detectTinyProject(projectDir) {
-  const srcDir = path.join(projectDir, "src");
-  let files = [];
-  let folders = [];
-
-  if (fs.existsSync(srcDir)) {
-    const walk = (dir) => {
-      for (const name of fs.readdirSync(dir)) {
-        const full = path.join(dir, name);
-        const stat = fs.statSync(full);
-
-        if (stat.isDirectory()) {
-          // normalize to a relative path for consistency across OS
-          folders.push(full.replace(projectDir + "/", ""));
-          walk(full);
-        } else {
-          files.push(full.replace(projectDir + "/", ""));
-        }
-      }
-    };
-
-    walk(srcDir);
-  }
-
-  return {
-    files,
-    folders,
-    fileCount: files.length,
-    folderCount: folders.length,
-  };
+## Component Relationships (Preview)
+${relationships.length ? relationships.join("\n") : "None found"}
+${
+  relationshipsTotal > relationships.length
+    ? `\n+${relationshipsTotal - relationships.length} more (Pro)`
+    : ""
 }
 
-/**
- * ----------------------------------------------------------------------
- * Lite Mode Analysis Engine
- * (Generates fallbacks + structural heuristics)
- * ----------------------------------------------------------------------
- */
-function generateLiteAnalysis(tiny, drift) {
-  const isTiny = tiny.fileCount <= 5;
-
-  // hierarchical level unlock system — purely UX layer
-  let level = "Level 1 (Minimal Project)";
-  if (tiny.folders.some((f) => f.includes("components")))
-    level = "Level 2 (Components Detected)";
-  if (tiny.folders.some((f) => f.includes("pages")))
-    level = "Level 3 (Pages Detected)";
-  if (tiny.folders.some((f) => f.includes("features")))
-    level = "Level 4 (Features Detected)";
-
-  // drift analysis summary — shallow layer ONLY
-  const driftChanges = [];
-  if (drift?.added?.length)
-    drift.added.forEach((file) => driftChanges.push(`Added: ${file}`));
-  if (drift?.removed?.length)
-    drift.removed.forEach((file) => driftChanges.push(`Removed: ${file}`));
-
-  // structural insights — intentionally limited to prevent leaking Pro logic
-  const insights = [];
-  if (isTiny) insights.push("Your project is in the early stages.");
-  if (!tiny.folders.includes("src/components"))
-    insights.push("Recommended: Create /src/components for reusable UI.");
-  if (!tiny.folders.includes("src/pages"))
-    insights.push("Recommended: Add pages inside /src/pages.");
-  if (tiny.fileCount > 5 && tiny.folderCount < 2)
-    insights.push(
-      "Your files are growing — grouping them improves scalability."
-    );
-
-  // progression logic — user-facing UX feature
-  let nextStep =
-    "Create src/components/Button.jsx and run `origin audit` again.";
-  if (
-    tiny.folders.includes("src/components") &&
-    !tiny.folders.includes("src/pages")
-  )
-    nextStep = "Add a page: src/pages/Home.jsx and re-run `origin audit`.";
-  if (
-    tiny.folders.includes("src/pages") &&
-    !tiny.folders.includes("src/features")
-  )
-    nextStep =
-      "Create a feature: src/features/user/UserCard.jsx and audit again.";
-
-  return {
-    level,
-    overview: `- Source files: **${tiny.fileCount}**\n- Folders: **${tiny.folderCount}**`,
-    driftChanges,
-    insights,
-    nextStep,
-  };
+## Possible Duplicates (Preview)
+${duplicates.preview.length ? duplicates.preview.join("\n") : "None detected"}
+${
+  duplicates.total > duplicates.preview.length
+    ? `\n+${duplicates.total - duplicates.preview.length} more (Pro)`
+    : ""
 }
 
-/**
- * ----------------------------------------------------------------------
- * Safe JSON Reader (Invariant: Never throw)
- * ----------------------------------------------------------------------
- */
-function safeRead(file) {
-  try {
-    if (!fs.existsSync(file)) return null;
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    // Fail silently — this is expected when artifacts are missing.
-    return null;
-  }
+## Dead Files (Preview)
+${deadFiles.preview.length ? deadFiles.preview.join("\n") : "None detected"}
+${
+  deadFiles.total > deadFiles.preview.length
+    ? `\n+${deadFiles.total - deadFiles.preview.length} more (Pro)`
+    : ""
+}
+
+## Unused Dependencies (Preview)
+${unusedDeps.preview.length ? unusedDeps.preview.join("\n") : "None detected"}
+${
+  unusedDeps.total > unusedDeps.preview.length
+    ? `\n+${unusedDeps.total - unusedDeps.preview.length} more (Pro)`
+    : ""
+}
+
+## Structure Hints (Lite)
+${hints.length ? hints.join("\n") : "No structural issues detected."}
+
+---
+
+_Generated by Origin Lite Mode_
+`;
 }
