@@ -27,20 +27,51 @@
  * ─────────────────────────────────────────────────────────────
  */
 
-import { pickStablePreview } from "./hashUtils.js";
-import fs from "fs";
+import fs from "fs-extra";
 import path from "path";
+import { pickStablePreview } from "./hashUtils.js";
 
-export function scanUnusedDeps(root, { project }) {
+export function scanUnusedDependencies(root, { project }) {
   const pkgPath = path.join(root, "package.json");
-  if (!fs.existsSync(pkgPath)) return [];
+  if (!fs.existsSync(pkgPath)) {
+    return { preview: [], total: 0 };
+  }
 
   const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-  const deps = Object.keys(pkg.dependencies || {});
+  const allDeps = Object.keys(pkg.dependencies || {}).concat(
+    Object.keys(pkg.devDependencies || {})
+  );
 
-  const unused = deps.filter((dep) => {
-    return dep.includes("day") || dep.includes("icon") || dep.includes("load");
-  });
+  // Files to scan
+  const srcDir = path.join(root, "src");
+  const used = new Set();
 
-  return pickStablePreview(unused, 3, project, "DEP_LITE");
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+    const items = fs.readdirSync(dir);
+
+    for (const item of items) {
+      const full = path.join(dir, item);
+      const stat = fs.statSync(full);
+
+      if (stat.isDirectory()) walk(full);
+      else {
+        const content = fs.readFileSync(full, "utf8");
+        allDeps.forEach((dep) => {
+          if (content.includes(dep)) used.add(dep);
+        });
+      }
+    }
+  }
+
+  walk(srcDir);
+
+  const unused = allDeps.filter((d) => !used.has(d));
+
+  const preview = pickStablePreview(unused, 3, project, "UNUSED_DEPS");
+
+  return {
+    preview,
+    total: unused.length,
+  };
 }
