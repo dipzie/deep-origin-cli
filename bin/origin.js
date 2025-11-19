@@ -4,13 +4,23 @@ import { runAudit } from "../core/auditEngine.js";
 import os from "os";
 import fs from "fs-extra";
 import path from "path";
+import { fileURLToPath } from "url";
+
+// ESM-safe __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load package.json manually (works in CLI ESM)
+const pkg = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "../package.json"), "utf8")
+);
 
 const program = new Command();
 
 program
   .name("origin")
   .description("🧠 Dipz Origin — Free Tier CLI")
-  .version("1.0.0");
+  .version(pkg.version);
 
 /**
  * ================================================================
