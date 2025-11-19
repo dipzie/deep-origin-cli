@@ -1,204 +1,201 @@
-# 🧠 Dipz Origin — Project Intelligence CLI (v1)
+# 🧠 Dipz Origin CLI  
+### Free Tier — Structural Intelligence for Developers
 
-**Free Tier Edition**
+Origin is a **local-first developer intelligence CLI** that scans your project, analyzes its structure, and generates an AI-readable summary — all without uploading files or sending data anywhere.
 
-A universal project-awareness engine for developers.  
-Origin scans any project (frontend, backend, full-stack) and generates a clean structural report.
+Works on any JavaScript/TypeScript project:  
+**React, Next.js, Vite, Node, Express, Vue, Svelte, and more.**
+
+Origin helps you understand your codebase in seconds — even tiny new projects.
 
 ---
 
-## 🚀 Features (Free Tier)
+<p align="center">
+<img src="https://img.shields.io/npm/v/deep-origin-cli?label=version&color=purple" />
+<img src="https://img.shields.io/npm/dw/deep-origin-cli?color=blueviolet" />
+<img src="https://img.shields.io/npm/l/deep-origin-cli?color=brightgreen" />
+</p>
 
-### 🔍 File Intelligence
+---
 
-- Total file count
-- Route detection
-- Basic schema detection
-- Detects API folders
-- Detects .env files
-- Framework detection
-- Dockerfile detection
+## ⭐ Why Origin?
 
-### 🧩 AI-Ready Metadata
+Developers spend too much time figuring out:
 
-Origin generates:
+- “What’s in this project?”
+- “Where are the routes?”
+- “What features exist?”
+- “What did I change?”
+- “What should I build next?”
+
+Origin runs a **local audit** and generates a clean summary:
+
+```
+📂 Preparing project context...
+🔎 Scanning file topology...
+📘 Generating Lite Summary...
+✨ Lite Intelligence Activated
+```
+
+And places all insights inside:
 
 ```
 docs/ai/bridge_summary.md
-docs/ai/bridge.json
 ```
 
-So AI tools (ChatGPT, Claude, etc.) instantly understand your project structure.
-
-### 🧠 Developer Guidance
-
-Each audit includes:
-
-- Helpful hints
-- Organization suggestions
-- Recommended next steps
+This gives you **instant clarity**, even in brand-new or tiny projects.
 
 ---
 
-## 🛠 Pro Tier (SaaS — not included in this CLI)
+# 🚀 Quick Start
 
-The upcoming Pro Tier (via Origin SaaS) unlocks:
+### Install globally:
 
-### ✔ Developer Behavior Learning
-
-- Peak coding hours
-- Flow vs reflection mode
-- Session consistency tracking
-
-### ✔ Pattern Engine
-
-- Route drift
-- Schema mismatch
-- Cleanup frequency
-- Stability score
-
-### ✔ Ecosystem Mode
-
-Map all sibling projects automatically.
-
-### ✔ Auto-Fix Plans
-
-Safe copy-paste fix suggestions.
-
-\_These features are NOT included in the npm CLI — The npm package contains Free Tier only.
-
----
-
-## 🚀 Installation
-
-### Global Install (recommended)
-
-```
+```bash
 npm install -g deep-origin-cli
 ```
 
-### Local Install
+Or as a dev dependency:
 
-```
-npm install deep-origin-cli
+```bash
+npm install -D deep-origin-cli
 ```
 
 ---
 
-## 🧪 Usage
-
-### Run audit on current project
+## ▶️ Run your first audit
 
 ```
 origin audit
 ```
 
-### Run audit on another folder
+This will:
+
+1. Scan your project  
+2. Build a structural summary  
+3. Generate `/docs/ai/bridge_summary.md`  
+4. Create `/docs/audit_history/audit_xxx.json`  
+
+Example output:
 
 ```
-origin audit ../my-project
-```
-
-### View CLI version
-
-```
-origin --version
-```
-
----
-
-## 📊 What Happens During Audit
-
-When you run:
-
-```
-origin audit .
-```
-
-Origin generates:
-
-### 1. File Intelligence
-
-- Total files
-- Detected API folders
-- Detected schemas
-- Dead/unused file indicators (Pro)
-- Dockerfile detection
-
-### 2. Backend Intelligence
-
-- API routes
-- Controller mapping (Pro)
-- Schema fields
-
-### 3. Environment Key Mapping
-
-- Reads `.env` files
-- Lists keys used
-- Flags missing or unused keys
-
-### 4. Framework Detection
-
-- Next.js
-- React
-- Express
-- NestJS
-- Custom stacks
-
-### 5. AI Bridge Generation
-
-- Creates `bridge.json`
-- Creates `bridge_summary.md`
-
-These are used by AI tools to interpret the project properly.
-
----
-
-## 📁 Folder Structure of Origin CLI
-
-```
-origin/
-│
-├── bin/
-│   └── origin.js              # CLI entry
-│
-├── core/
-│   └── (audit, flow, rhythm, scanner engines)
-│
-├── templates/
-│   └── dipz.json              # Template manifest
-│
-├── dipz.json                  # CLI manifest
-├── package.json               # CLI metadata
-├── README.md                  # Documentation
-└── node_modules/
+🧠  Origin Audit Engine — Lite Mode v1.1
+📂 Preparing project context...
+🔎 Scanning file topology...
+📘 Generating Lite Summary...
+✨ Lite Intelligence Activated
 ```
 
 ---
 
-## 🔒 Security & Privacy
+# 📁 Where Files Are Generated
 
-- ✔ 100% read-only
-- ✔ Does NOT modify your project
-- ✔ Does NOT upload data
-- ✔ Safe for enterprise environments
-- ✔ Generates output only inside your project `/docs`
+```
+docs/
+  ai/
+    bridge_summary.md   ← human-friendly insights
+    bridge.json         ← lite-mode AI structure map
+  audit_history/
+    audit_xxx.json      ← raw structural snapshots
+```
 
----
-
-## 📘 License
-
-MIT License — free for personal & commercial use.
-
----
-
-## 💬 Support
-
-GitHub repo coming soon.
+Everything stays **local**.  
+Nothing is uploaded.  
+Origin is private by design.
 
 ---
 
-# 🎉 Welcome to Origin
+# 🎮 Progression System (Free Tier)
 
-You now have a project intelligence engine that boosts clarity, speed, and focus.  
-Whether you're a beginner or senior engineer — Origin helps you build with confidence.
+Origin Free Tier includes a fun, gamified progression system:
+
+| Project Structure | Level |
+|-------------------|-------|
+| 0–5 files | Level 1 — Minimal Project |
+| `src/components` exists | Level 2 — Component Awareness |
+| `src/pages` exists | Level 3 — Page Awareness |
+| `src/features` exists | Level 4 — Feature Architecture |
+
+Each audit suggests the **next step**.
+
+---
+
+# 🔒 Pro Tier Preview
+
+The Free Tier includes a teaser for what’s coming:
+
+| Feature | Free | Pro |
+|---------|------|------|
+| Local audit | ✅ | ✅ |
+| Lite summary | ✅ | Enhanced |
+| Drift added/removed detection | ⏳ | Deep timeline |
+| Architecture maps | ❌ | ✅ |
+| Dependency graphs | ❌ | ✅ |
+| Feature boundary detection | ❌ | ✅ |
+| Multi-project intelligence | ❌ | ✅ |
+| Origin Brain v2 | ❌ | 🔥 |
+
+---
+
+# 🟣 Founder Lore: The Hidden Command
+
+Try this in your terminal:
+
+```
+origin unlock dipz
+```
+
+**99.9% of users will see:**
+
+```
+🟣 Access Denied
+“dipz” privilege token is restricted to Founder instances.
+```
+
+A mysterious hint that **Origin has deeper layers**.
+
+(Founder Mode is not available publicly.)
+
+---
+
+# 📦 Commands
+
+### `origin audit`  
+Run a full structural analysis.
+
+### `origin unlock dipz`  
+Reveal Origin’s lore.  
+This command is intentionally restricted and used for branding.
+
+---
+
+# 🧩 Supported Frameworks
+
+- React  
+- Next.js  
+- Vite  
+- Vue  
+- Svelte  
+- Astro  
+- Node.js / Express  
+- Any JS/TS project with a `src` folder
+
+---
+
+# 🛡 Privacy & Local-First Guarantee
+
+Origin never uploads or transmits your code.  
+Everything is processed **locally** on your machine.
+
+---
+
+# 💬 Feedback / Issues
+
+Open an issue or suggestion:  
+👉 https://github.com/dipzie/deep-origin-cli
+
+---
+
+# 📜 License
+
+MIT License © dipz  
