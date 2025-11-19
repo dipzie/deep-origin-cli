@@ -1,6 +1,6 @@
 {
   "name": "deep-origin-cli",
-  "version": "2.2.12",
+  "version": "2.2.13",
   "description": "Deep Origin CLI — Free Tier Project Intelligence Engine",
   "type": "module",
   "bin": {
