@@ -1,4 +1,4 @@
-/* //core/auditEngine.js
+/*
  * ─────────────────────────────────────────────────────────────
  *                       ORIGIN LITE MODE
  *                       INTERNAL MODULE
@@ -75,15 +75,19 @@ export async function runAudit(root) {
   console.log(pc.green("✔ Project loaded"));
   console.log(pc.dim("Scanning framework, components, pages, features...\n"));
 
-  const framework = detectFramework(root);
-  const components = scanComponents(root);
-  const pages = scanPages(root);
-  const features = scanFeatures(root);
-  const ui = detectUISystem(root);
-  const hints = generateStructureHints(root);
+  // ALWAYS ensure fallback values
+  const framework = detectFramework(root) || "Unknown";
+  const components = scanComponents(root) || [];
+  const pages = scanPages(root) || [];
+  const features = scanFeatures(root) || [];
+  const ui = detectUISystem(root) || [];
+  const hints = generateStructureHints(root) || [];
 
-  // NEW Scanners
-  const rel = scanComponentRelationships(root, { components, project });
+  // NEW Scanners (SAFE)
+  const rel = scanComponentRelationships(root, {
+    components: Array.isArray(components) ? components : [],
+    project,
+  });
   const relationships = rel.preview;
   const relationshipsTotal = rel.total;
 
@@ -99,7 +103,6 @@ export async function runAudit(root) {
     fs.existsSync(path.join(root, "api")) ||
     fs.existsSync(path.join(root, "backend"));
 
-  // CLEAN file list for bridge + history
   const filteredFiles = filterBridgeFiles(files);
 
   // Markdown summary file
@@ -123,19 +126,15 @@ export async function runAudit(root) {
 
   // Save bridge summary
   fs.ensureDirSync(path.join(root, "docs/ai"));
-  const out = path.join(root, "docs/ai/bridge_summary.md");
-  fs.writeFileSync(out, summary);
+  fs.writeFileSync(path.join(root, "docs/ai/bridge_summary.md"), summary);
   console.log(pc.green(`📄 Summary saved → docs/ai/bridge_summary.md`));
 
   // Save audit history
-  const historyDir = path.join(root, "docs/audit_history");
-  fs.ensureDirSync(historyDir);
+  fs.ensureDirSync(path.join(root, "docs/audit_history"));
 
   const id = Date.now().toString();
-  const historyFile = path.join(historyDir, `audit_${id}.json`);
-
   fs.writeJsonSync(
-    historyFile,
+    path.join(root, "docs/audit_history", `audit_${id}.json`),
     {
       project,
       files: filteredFiles,
@@ -208,49 +207,61 @@ export async function runAudit(root) {
   console.log(pc.cyan("────────────────────────────────────────"));
 
   relationships.forEach((line) => console.log("• " + line));
+
   if (relationshipsTotal > relationships.length)
     console.log(
       pc.magenta(`+${relationshipsTotal - relationships.length} more (Pro)`)
     );
+
   console.log("");
 
   // DUPLICATES
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  POSSIBLE DUPLICATES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
-  duplicates.forEach((d) => console.log("• " + d));
+
+  duplicates.preview.forEach((d) => console.log("• " + d));
+
   if (duplicates.total > duplicates.preview.length)
     console.log(
       pc.magenta(`+${duplicates.total - duplicates.preview.length} more (Pro)`)
     );
+
   console.log("");
 
   // DEAD FILES
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  DEAD FILES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
+
   deadFiles.preview.forEach((d) => console.log("• " + d));
+
   if (deadFiles.total > deadFiles.preview.length)
     console.log(
       pc.magenta(`+${deadFiles.total - deadFiles.preview.length} more (Pro)`)
     );
+
   console.log("");
 
   // UNUSED DEPS
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  UNUSED DEPENDENCIES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
+
   unusedDeps.preview.forEach((d) => console.log("• " + d));
+
   if (unusedDeps.total > unusedDeps.preview.length)
     console.log(
       pc.magenta(`+${unusedDeps.total - unusedDeps.preview.length} more (Pro)`)
     );
+
   console.log("");
 
   // STRUCTURE HINTS
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  STRUCTURE HINTS (Lite)")));
   console.log(pc.cyan("────────────────────────────────────────"));
+
   if (hints.length) hints.forEach((h) => console.log(pc.yellow("⚠ " + h)));
   else console.log("No structural issues detected.");
   console.log("");
