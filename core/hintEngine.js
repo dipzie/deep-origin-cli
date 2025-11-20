@@ -31,52 +31,76 @@
  * STRUCTURE HINT ENGINE — Lite Mode
  * Shows EXACT 1 helpful hint per category (Lite)
  */
+
 import fs from "fs-extra";
 import path from "path";
+
+const USER_DIRS = ["src", "public", "app", "components", "features"];
 
 export function generateStructureHints(root) {
   const hints = [];
 
   /* ----------------------------------------------
-     1. Deep Folder Nesting Detection (1 hint)
+     1. Deep Folder Nesting (Lite → 1 hint only)
      ---------------------------------------------- */
-  function checkNested(dir, depth = 0) {
-    if (depth >= 4) return dir; // trigger
-    if (!dir || !fs.existsSync(dir)) return null;
+  function scanUserFolders() {
+    for (const dirName of USER_DIRS) {
+      const dir = path.join(root, dirName);
+      if (!fs.existsSync(dir)) continue;
 
-    const entries = fs.readdirSync(dir);
+      const nested = checkNested(dir, 0);
+      if (nested) return nested.replace(root, "");
+    }
+    return null;
+  }
 
-    for (const entry of entries) {
-      const full = path.join(dir, entry);
+  function checkNested(dir, depth) {
+    if (depth >= 4) return dir;
+    if (!fs.existsSync(dir)) return null;
+
+    const items = fs.readdirSync(dir);
+    for (const item of items) {
+      const full = path.join(dir, item);
       if (fs.statSync(full).isDirectory()) {
-        const res = checkNested(full, depth + 1);
-        if (res) return res;
+        const bad = checkNested(full, depth + 1);
+        if (bad) return bad;
       }
     }
     return null;
   }
 
-  const nested = checkNested(root);
-  if (nested) hints.push(`Deep nesting detected → ${nested.replace(root, "")}`);
+  const nested = scanUserFolders();
+  if (nested) {
+    hints.push(`Deep nesting detected → ${nested}`);
+  }
 
   /* ----------------------------------------------
-     2. Page placed in /src/pages but looks like component
+     2. Component Misplaced Inside /src/pages
      ---------------------------------------------- */
   const pagesDir = path.join(root, "src/pages");
   if (fs.existsSync(pagesDir)) {
     const pages = fs.readdirSync(pagesDir);
 
-    const wrong = pages.find(
-      (p) =>
-        p.toLowerCase().includes("button") ||
-        p.toLowerCase().includes("card") ||
-        p.toLowerCase().includes("modal")
-    );
+    const suspiciousWords = [
+      "button",
+      "card",
+      "modal",
+      "badge",
+      "avatar",
+      "dropdown",
+      "loader",
+    ];
 
-    if (wrong)
+    const wrong = pages.find((page) => {
+      const lower = page.toLowerCase();
+      return suspiciousWords.some((w) => lower.includes(w));
+    });
+
+    if (wrong) {
       hints.push(
-        `/src/pages/${wrong} looks like a Component — move to /src/components`
+        `/src/pages/${wrong} looks like a Component — move to /src/components (Lite)`
       );
+    }
   }
 
   return hints;

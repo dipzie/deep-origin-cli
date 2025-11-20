@@ -27,12 +27,33 @@
  * ─────────────────────────────────────────────────────────────
  */
 
+import fs from "fs-extra";
+import path from "path";
 import { pickStablePreview } from "./hashUtils.js";
 
-export function scanDeadFiles(root, { allFiles = [], project }) {
-  if (!Array.isArray(allFiles)) allFiles = [];
+const IGNORE = ["node_modules", ".git", "dist", "build", ".next", ".turbo"];
 
-  const unused = allFiles.filter((f) => {
+export function scanDeadFiles(root, { project }) {
+  const all = [];
+
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+
+    const items = fs.readdirSync(dir);
+    for (const item of items) {
+      if (IGNORE.includes(item)) continue;
+
+      const full = path.join(dir, item);
+      const stat = fs.statSync(full);
+
+      if (stat.isDirectory()) walk(full);
+      else all.push(full.replace(root, ""));
+    }
+  }
+
+  walk(root);
+
+  const dead = all.filter((f) => {
     return (
       f.toLowerCase().includes("old") ||
       f.toLowerCase().includes("unused") ||
@@ -41,8 +62,10 @@ export function scanDeadFiles(root, { allFiles = [], project }) {
     );
   });
 
+  const preview = pickStablePreview(dead, 5, project, "DEAD_LITE");
+
   return {
-    preview: pickStablePreview(unused, 5, project, "DEAD"),
-    total: unused.length,
+    preview,
+    total: dead.length,
   };
 }

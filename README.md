@@ -1,12 +1,12 @@
 # 🧠 Dipz Origin CLI  
 ### Free Tier — Structural Intelligence for Developers
+*A local-first audit engine that reveals your project’s structure in seconds.*
 
-Origin is a **local-first developer intelligence CLI** that scans your project, analyzes its structure, and generates an AI-readable summary — all without uploading files or sending data anywhere.
+Origin scans your project locally and generates an **AI-ready summary**:  
+clean, safe, and instantly readable by any AI assistant.
 
-Works on any JavaScript/TypeScript project:  
-**React, Next.js, Vite, Node, Express, Vue, Svelte, and more.**
-
-Origin helps you understand your codebase in seconds — even tiny new projects.
+Works for all JS/TS stacks:  
+**React, Vite, Next.js, Vue, Svelte, Express, and plain JS/TS repos.**
 
 ---
 
@@ -18,184 +18,214 @@ Origin helps you understand your codebase in seconds — even tiny new projects.
 
 ---
 
-## ⭐ Why Origin?
+# ⭐ Why Origin Exists
 
-Developers spend too much time figuring out:
+Developers constantly need to know:
 
-- “What’s in this project?”
-- “Where are the routes?”
-- “What features exist?”
-- “What did I change?”
-- “What should I build next?”
+- “What’s inside this project?”
+- “Where are my pages, components, and features?”
+- “Is something misplaced?”
+- “Are there unused files or dependencies?”
+- “What should I fix before shipping?”
 
-Origin runs a **local audit** and generates a clean summary:
+Origin answers all of this instantly — **without opening any file**.
+
+It produces a structured report:
 
 ```
-📂 Preparing project context...
-🔎 Scanning file topology...
-📘 Generating Lite Summary...
-✨ Lite Intelligence Activated
+📊 Running Origin Lite Audit…
+✔ Project loaded
+✔ Scanning complete
+✨ Audit complete — insight ready!
 ```
 
-And places all insights inside:
+And saves it here:
 
 ```
 docs/ai/bridge_summary.md
 ```
 
-This gives you **instant clarity**, even in brand-new or tiny projects.
+This gives you clarity even in messy, old, or brand-new projects.
 
 ---
 
 # 🚀 Quick Start
 
 ### Install globally:
-
 ```bash
 npm install -g deep-origin-cli
 ```
 
 Or as a dev dependency:
-
 ```bash
 npm install -D deep-origin-cli
 ```
 
 ---
 
-## ▶️ Run your first audit
-
-```
+# ▶️ Run your first audit
+```bash
 origin audit
 ```
 
-This will:
+What happens:
 
-1. Scan your project  
-2. Build a structural summary  
-3. Generate `/docs/ai/bridge_summary.md`  
-4. Create `/docs/audit_history/audit_xxx.json`  
+1. Scans your project folders  
+2. Detects components, pages, features, UI systems  
+3. Finds duplicates, dead files, and unused dependencies  
+4. Generates `docs/ai/bridge_summary.md`  
+5. Writes a clean JSON snapshot to `docs/audit_history/`
 
-Example output:
+Example:
 
 ```
-🧠  Origin Audit Engine — Lite Mode v1.1
-📂 Preparing project context...
-🔎 Scanning file topology...
-📘 Generating Lite Summary...
-✨ Lite Intelligence Activated
+✨ Origin Lite Mode Audit
+✔ Project loaded
+✔ Base scanning complete
+📄 Summary saved
 ```
 
 ---
 
-# 📁 Where Files Are Generated
+# 📁 Generated Files
+
+Origin adds a safe, sandboxed docs area:
 
 ```
 docs/
   ai/
-    bridge_summary.md   ← human-friendly insights
-    bridge.json         ← lite-mode AI structure map
+    bridge_summary.md     ← human-friendly Lite summary
   audit_history/
-    audit_xxx.json      ← raw structural snapshots
+    audit_XXXX.json       ← raw tree snapshot
 ```
 
-Everything stays **local**.  
 Nothing is uploaded.  
-Origin is private by design.
+Everything stays on your machine.
 
 ---
 
-# 🎮 Progression System (Free Tier)
+# 🧩 What Lite Mode Detects (Free)
 
-Origin Free Tier includes a fun, gamified progression system:
+Origin Lite gives you **real, useful intelligence**:
 
-| Project Structure | Level |
-|-------------------|-------|
-| 0–5 files | Level 1 — Minimal Project |
-| `src/components` exists | Level 2 — Component Awareness |
-| `src/pages` exists | Level 3 — Page Awareness |
-| `src/features` exists | Level 4 — Feature Architecture |
+### ✅ Structural previews  
+- Components (capped preview)  
+- Pages (capped preview)  
+- Features folder detection  
+- UI libraries (MUI, Tailwind, shadcn, etc.)
 
-Each audit suggests the **next step**.
+### ✅ Architecture sanity checks  
+- Deep folder nesting (Lite → 1 specific hint only)  
+- Components accidentally placed in `/src/pages`  
+- Basic health score
+
+### ✅ Lite Problem Detection  
+- Duplicate components (preview only)  
+- Dead/unused files (preview only)  
+- Unused dependencies (preview only)  
+- Component import relationships (Lite → shallow, capped)
+
+All previews are **stable + capped**, protected by hashing so they cannot be “abused” to reveal the full list.
 
 ---
 
-# 🔒 Pro Tier Preview
+# 🕹 Progression System (Gamified)
 
-The Free Tier includes a teaser for what’s coming:
+Origin encourages better architecture:
+
+| Structure Found | Level |
+|-----------------|--------|
+| Project detected | Level 1: Minimal |
+| `/src/components` | Level 2: Component Awareness |
+| `/src/pages` | Level 3: Page Awareness |
+| `/src/features` | Level 4: Feature Architecture |
+
+This helps new developers improve naturally.
+
+---
+
+# 🔒 Pro Tier (Coming Soon)
+
+Free gives you the high-value basics.  
+Pro unlocks the *real* power:
 
 | Feature | Free | Pro |
-|---------|------|------|
+|--------|------|-----|
 | Local audit | ✅ | ✅ |
-| Lite summary | ✅ | Enhanced |
-| Drift added/removed detection | ⏳ | Deep timeline |
-| Architecture maps | ❌ | ✅ |
-| Dependency graphs | ❌ | ✅ |
-| Feature boundary detection | ❌ | ✅ |
-| Multi-project intelligence | ❌ | ✅ |
+| Component/page preview | Capped | Full |
+| Duplicate files | Capped | Full map |
+| Unused dependencies | Capped | Full dependency graph |
+| Feature boundaries | ❌ | ✅ |
+| Full architecture map | ❌ | ✅ |
+| Component tree | ❌ | ✅ |
+| Circular dependencies | ❌ | ✅ |
+| Full drift timeline | ❌ | 🔥 |
+| Multi-project intelligence | ❌ | 🔥 |
 | Origin Brain v2 | ❌ | 🔥 |
+
+Pro remains fully local — but far deeper.
 
 ---
 
-# 🟣 Founder Lore: The Hidden Command
+# 🟣 Hidden Founder Lore
 
-Try this in your terminal:
-
+Try:
 ```
 origin unlock dipz
 ```
 
-**99.9% of users will see:**
+Most users will see:
 
 ```
 🟣 Access Denied
 “dipz” privilege token is restricted to Founder instances.
 ```
 
-A mysterious hint that **Origin has deeper layers**.
+A tiny tease of deeper layers.
 
-(Founder Mode is not available publicly.)
+Founder Mode is **private** and not part of the public product.
 
 ---
 
 # 📦 Commands
 
 ### `origin audit`  
-Run a full structural analysis.
+Run a full structural audit (Lite Mode).
 
 ### `origin unlock dipz`  
-Reveal Origin’s lore.  
-This command is intentionally restricted and used for branding.
+Lore command — readonly, for branding.
 
 ---
 
-# 🧩 Supported Frameworks
+# 🛡 Privacy — Local First
 
-- React  
-- Next.js  
-- Vite  
-- Vue  
-- Svelte  
-- Astro  
-- Node.js / Express  
-- Any JS/TS project with a `src` folder
+Origin does **zero** uploading.  
+No logs, no telemetry, no servers.
+
+All processing happens on **your machine only**.
 
 ---
 
-# 🛡 Privacy & Local-First Guarantee
+# 🔧 Supported Projects
 
-Origin never uploads or transmits your code.  
-Everything is processed **locally** on your machine.
+Origin works on any project with a `src` folder:
+
+- React (CRA, Vite, Next.js App/Pages)
+- Vue
+- Svelte / SvelteKit
+- Astro
+- Node / Express
+- Vanilla TS/JS apps
 
 ---
 
-# 💬 Feedback / Issues
+# 📬 Feedback & Issues
 
-Open an issue or suggestion:  
+GitHub Issues:  
 👉 https://github.com/dipzie/deep-origin-cli
 
 ---
 
 # 📜 License
 
-MIT License © dipz  
+MIT License © dipz
