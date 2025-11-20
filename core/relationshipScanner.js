@@ -40,10 +40,10 @@ import { pickStablePreview } from "./hashUtils.js";
 const IMPORT_REGEX = /import\s+.*?from\s+['"](.*)['"]/g;
 
 export function scanComponentRelationships(root, { components = [], project }) {
-  // Prevent crash if invalid input
+  // Guarantee safety
   if (!Array.isArray(components)) components = [];
 
-  const results = [];
+  const relations = [];
 
   for (const comp of components) {
     const absPath = path.join(root, comp);
@@ -51,17 +51,19 @@ export function scanComponentRelationships(root, { components = [], project }) {
     if (!fs.existsSync(absPath)) continue;
 
     const content = fs.readFileSync(absPath, "utf8");
-
     let match;
+
     while ((match = IMPORT_REGEX.exec(content)) !== null) {
       const importPath = match[1];
 
+      // Only simple relative imports → Lite Mode limitation
       if (importPath.startsWith("./") || importPath.startsWith("../")) {
         const resolved = path
           .resolve(path.dirname(absPath), importPath)
-          .replace(root, "");
+          .replace(root, "")
+          .replace(/\\/g, "/");
 
-        results.push({
+        relations.push({
           from: comp,
           to: resolved,
         });
@@ -69,12 +71,12 @@ export function scanComponentRelationships(root, { components = [], project }) {
     }
   }
 
-  const relAsStrings = results.map((r) => `${r.from} → ${r.to}`);
+  const relationStrings = relations.map((r) => `${r.from} → ${r.to}`);
 
-  const preview = pickStablePreview(relAsStrings, 3, project, "REL_LITE");
+  const preview = pickStablePreview(relationStrings, 3, project, "REL_LITE");
 
   return {
     preview,
-    total: results.length,
+    total: relations.length,
   };
 }

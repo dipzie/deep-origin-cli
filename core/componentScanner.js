@@ -30,35 +30,37 @@
 import fs from "fs-extra";
 import path from "path";
 
-const EXT = [".tsx", ".jsx", ".ts", ".js", ".vue", ".svelte"];
+const VALID_EXT = [".tsx", ".jsx", ".ts", ".js", ".vue", ".svelte"];
 
 export function scanComponents(root) {
   const results = [];
-  const dirs = ["src/components", "src/Components", "src/component"];
 
-  dirs.forEach((dirName) => {
+  const componentDirs = ["src/components", "src/Components", "src/component"];
+
+  for (const dirName of componentDirs) {
     const dir = path.join(root, dirName);
-    if (!fs.existsSync(dir)) return;
-
+    if (!fs.existsSync(dir)) continue;
     walk(dir);
-  });
+  }
 
-  function walk(d) {
-    const items = fs.readdirSync(d);
+  function walk(current) {
+    const items = fs.readdirSync(current);
+
     for (const item of items) {
-      const full = path.join(d, item);
+      const full = path.join(current, item);
       const stat = fs.statSync(full);
 
-      if (stat.isDirectory()) walk(full);
-      else {
+      if (stat.isDirectory()) {
+        walk(full);
+      } else {
         const ext = path.extname(full);
-        if (EXT.includes(ext)) {
-          const name = full.replace(root, "").replace(/\\/g, "/");
-          results.push(name);
+        if (VALID_EXT.includes(ext)) {
+          results.push(full.replace(root, "").replace(/\\/g, "/"));
         }
       }
     }
   }
 
+  // Always return ARRAY
   return [...new Set(results)];
 }
