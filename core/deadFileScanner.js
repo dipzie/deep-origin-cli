@@ -32,7 +32,6 @@ import path from "path";
 import { pickStablePreview } from "./hashUtils.js";
 
 export function scanDeadFiles(root, { project }) {
-  // Scan entire src folder for filename patterns
   const unused = [];
   const SRC = path.join(root, "src");
 
@@ -40,21 +39,19 @@ export function scanDeadFiles(root, { project }) {
     if (!fs.existsSync(dir)) return;
 
     const items = fs.readdirSync(dir);
-
     for (const item of items) {
       const full = path.join(dir, item);
       const stat = fs.statSync(full);
 
-      if (stat.isDirectory()) {
-        walk(full);
-      } else {
-        const filename = full.toLowerCase();
+      if (stat.isDirectory()) walk(full);
+      else {
+        const lower = full.toLowerCase();
 
         if (
-          filename.includes("old") ||
-          filename.includes("unused") ||
-          filename.includes("deprecated") ||
-          filename.includes("backup")
+          lower.includes("old") ||
+          lower.includes("unused") ||
+          lower.includes("deprecated") ||
+          lower.includes("backup")
         ) {
           unused.push(full.replace(root, "").replace(/\\/g, "/"));
         }
