@@ -27,44 +27,22 @@
  * ─────────────────────────────────────────────────────────────
  */
 
-import fs from "fs-extra";
-import path from "path";
 import { pickStablePreview } from "./hashUtils.js";
 
-export function scanDeadFiles(root, { project }) {
-  const unused = [];
-  const SRC = path.join(root, "src");
+export function scanDeadFiles(root, { allFiles = [], project }) {
+  if (!Array.isArray(allFiles)) allFiles = [];
 
-  function walk(dir) {
-    if (!fs.existsSync(dir)) return;
-
-    const items = fs.readdirSync(dir);
-    for (const item of items) {
-      const full = path.join(dir, item);
-      const stat = fs.statSync(full);
-
-      if (stat.isDirectory()) walk(full);
-      else {
-        const lower = full.toLowerCase();
-
-        if (
-          lower.includes("old") ||
-          lower.includes("unused") ||
-          lower.includes("deprecated") ||
-          lower.includes("backup")
-        ) {
-          unused.push(full.replace(root, "").replace(/\\/g, "/"));
-        }
-      }
-    }
-  }
-
-  walk(SRC);
-
-  const preview = pickStablePreview(unused, 5, project, "DEAD_LITE");
+  const unused = allFiles.filter((f) => {
+    return (
+      f.toLowerCase().includes("old") ||
+      f.toLowerCase().includes("unused") ||
+      f.toLowerCase().includes("deprecated") ||
+      f.toLowerCase().includes("backup")
+    );
+  });
 
   return {
-    preview,
+    preview: pickStablePreview(unused, 5, project, "DEAD"),
     total: unused.length,
   };
 }

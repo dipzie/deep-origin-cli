@@ -33,6 +33,11 @@
  * ─────────────────────────────────────────────────────────────
  */
 
+/*
+ * Component Relationship Scanner (Lite)
+ * Scans import statements inside components.
+ */
+
 import fs from "fs-extra";
 import path from "path";
 import { pickStablePreview } from "./hashUtils.js";
@@ -40,43 +45,32 @@ import { pickStablePreview } from "./hashUtils.js";
 const IMPORT_REGEX = /import\s+.*?from\s+['"](.*)['"]/g;
 
 export function scanComponentRelationships(root, { components = [], project }) {
-  // Guarantee safety
   if (!Array.isArray(components)) components = [];
 
-  const relations = [];
+  const results = [];
 
   for (const comp of components) {
-    const absPath = path.join(root, comp);
+    const abs = path.join(root, comp);
+    if (!fs.existsSync(abs)) continue;
 
-    if (!fs.existsSync(absPath)) continue;
-
-    const content = fs.readFileSync(absPath, "utf8");
+    const content = fs.readFileSync(abs, "utf8");
     let match;
 
     while ((match = IMPORT_REGEX.exec(content)) !== null) {
       const importPath = match[1];
 
-      // Only simple relative imports → Lite Mode limitation
       if (importPath.startsWith("./") || importPath.startsWith("../")) {
         const resolved = path
-          .resolve(path.dirname(absPath), importPath)
-          .replace(root, "")
-          .replace(/\\/g, "/");
+          .resolve(path.dirname(abs), importPath)
+          .replace(root, "");
 
-        relations.push({
-          from: comp,
-          to: resolved,
-        });
+        results.push(`${comp} → ${resolved}`);
       }
     }
   }
 
-  const relationStrings = relations.map((r) => `${r.from} → ${r.to}`);
-
-  const preview = pickStablePreview(relationStrings, 3, project, "REL_LITE");
-
   return {
-    preview,
-    total: relations.length,
+    preview: pickStablePreview(results, 3, project, "REL"),
+    total: results.length,
   };
 }

@@ -27,36 +27,30 @@
  * ─────────────────────────────────────────────────────────────
  */
 
+/*
+ * Stable preview selector based on project + salt hashing
+ */
+
 import crypto from "crypto";
 
-/**
- * Create a stable hash based on project path + item key + secret
- * This ensures PREVIEW ITEMS NEVER CHANGE even if items change/deleted.
- */
-export function stableHash(input) {
-  return crypto.createHash("sha256").update(input).digest("hex");
-}
+export function pickStablePreview(items, limit, project, salt) {
+  if (!Array.isArray(items)) return [];
 
-/**
- * Pick a stable preview list.
- * - items: array of items
- * - count: number of previews to show
- * - project: project name / root path
- * - salt: name of the scanner (unique per feature)
- */
-export function pickStablePreview(items, count, project, salt) {
-  if (!items.length) return [];
+  const sorted = [...items].sort();
 
-  const previews = new Set();
+  const seeded = sorted.map((item) => {
+    const hash = crypto
+      .createHash("sha256")
+      .update(project + item + salt)
+      .digest("hex");
 
-  // We generate many hash seeds to guarantee enough entropy
-  let counter = 0;
-  while (previews.size < Math.min(count, items.length)) {
-    const hash = stableHash(`${project}:${salt}:${counter}`);
-    const index = parseInt(hash.slice(0, 8), 16) % items.length;
-    previews.add(items[index]);
-    counter++;
-  }
+    return { item, score: parseInt(hash.slice(0, 8), 16) };
+  });
 
-  return [...previews];
+  const final = seeded
+    .sort((a, b) => a.score - b.score)
+    .slice(0, limit)
+    .map((x) => x.item);
+
+  return final;
 }

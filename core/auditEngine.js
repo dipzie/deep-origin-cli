@@ -16,12 +16,7 @@
  *    • loss of Lite Mode protections
  *    • invalid preview generation
  *
- *  The full, stable, and extended scanning engine is available
- *  ONLY in Origin Pro. Lite Mode contains intentionally limited
- *  and obfuscated logic for security and upgrade protection.
- *
- *  Proceed at your own risk. This module is NOT considered a
- *  stable API surface and may break without notice.
+ *  The full scanning engine is available ONLY in Origin Pro.
  *
  *  © Dipz Origin — Protected Internal Logic
  * ─────────────────────────────────────────────────────────────
@@ -44,8 +39,11 @@ import { scanDuplicates } from "./duplicateScanner.js";
 import { scanDeadFiles } from "./deadFileScanner.js";
 import { scanUnusedDependencies } from "./unusedDepsScanner.js";
 
-// Filter files for bridge + clean history records
-function filterBridgeFiles(files) {
+/* ============================================================
+   CLEAN FILE LIST FOR BRIDGE + HISTORY
+   ============================================================ */
+function filterBridgeFiles(files = []) {
+  if (!Array.isArray(files)) return [];
   return files.filter(
     (f) =>
       !f.includes("node_modules") &&
@@ -65,6 +63,9 @@ function filterBridgeFiles(files) {
   );
 }
 
+/* ============================================================
+   MAIN AUDIT ENGINE
+   ============================================================ */
 export async function runAudit(root) {
   console.log(pc.cyan(pc.bold("\n✨ Origin Lite Mode Audit\n")));
   console.log(pc.dim("Preparing project…\n"));
@@ -75,7 +76,7 @@ export async function runAudit(root) {
   console.log(pc.green("✔ Project loaded"));
   console.log(pc.dim("Scanning framework, components, pages, features...\n"));
 
-  // ALWAYS ensure fallback values
+  // ALWAYS SAFE VALUES
   const framework = detectFramework(root) || "Unknown";
   const components = scanComponents(root) || [];
   const pages = scanPages(root) || [];
@@ -83,16 +84,24 @@ export async function runAudit(root) {
   const ui = detectUISystem(root) || [];
   const hints = generateStructureHints(root) || [];
 
-  // NEW Scanners (SAFE)
+  // NEW scanners (all safe)
   const rel = scanComponentRelationships(root, {
     components: Array.isArray(components) ? components : [],
     project,
   });
-  const relationships = rel.preview;
-  const relationshipsTotal = rel.total;
+  const relationships = rel.preview || [];
+  const relationshipsTotal = rel.total || 0;
 
-  const duplicates = scanDuplicates(root, { components, project });
-  const deadFiles = scanDeadFiles(root, { project });
+  const duplicates = scanDuplicates(root, {
+    components: Array.isArray(components) ? components : [],
+    project,
+  });
+
+  const deadFiles = scanDeadFiles(root, {
+    allFiles: Array.isArray(files) ? files : [],
+    project,
+  });
+
   const unusedDeps = scanUnusedDependencies(root, { project });
 
   console.log(pc.green("✔ Base scanning complete\n"));
@@ -105,7 +114,9 @@ export async function runAudit(root) {
 
   const filteredFiles = filterBridgeFiles(files);
 
-  // Markdown summary file
+  /* ============================================================
+     GENERATE MARKDOWN SUMMARY
+     ============================================================ */
   const summary = generateSummary({
     project,
     files: filteredFiles,
@@ -124,15 +135,17 @@ export async function runAudit(root) {
     timestamp: new Date().toISOString(),
   });
 
-  // Save bridge summary
+  /* ============================================================
+     SAVE SUMMARY + HISTORY
+     ============================================================ */
   fs.ensureDirSync(path.join(root, "docs/ai"));
   fs.writeFileSync(path.join(root, "docs/ai/bridge_summary.md"), summary);
+
   console.log(pc.green(`📄 Summary saved → docs/ai/bridge_summary.md`));
 
-  // Save audit history
   fs.ensureDirSync(path.join(root, "docs/audit_history"));
-
   const id = Date.now().toString();
+
   fs.writeJsonSync(
     path.join(root, "docs/audit_history", `audit_${id}.json`),
     {
@@ -158,15 +171,24 @@ export async function runAudit(root) {
     pc.green(`📦 History saved → docs/audit_history/audit_${id}.json\n`)
   );
 
-  // HEALTH SCORE
-  const health = computeHealthScore({ features, ui, hints, framework });
+  /* ============================================================
+     HEALTH SCORE (Lite)
+     ============================================================ */
+  const health = computeHealthScore({
+    features,
+    ui,
+    hints,
+    framework,
+  });
 
-  // ======================
-  // CLEAN CONSOLE OUTPUT
-  // ======================
+  /* ============================================================
+     CLEAN CONSOLE OUTPUT
+     ============================================================ */
+
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  PROJECT OVERVIEW")));
   console.log(pc.cyan("────────────────────────────────────────"));
+
   console.log(pc.white(`Project:      `) + pc.green(project));
   console.log(
     pc.white(`Files:        `) + pc.green(filteredFiles.length.toString())
@@ -175,7 +197,7 @@ export async function runAudit(root) {
   console.log(pc.white(`Health:       `) + pc.green(`${health}%`));
   console.log("");
 
-  // PAGES
+  /* ------------------ PAGES ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  PAGES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
@@ -184,7 +206,7 @@ export async function runAudit(root) {
     console.log(pc.magenta(`+${pages.length - 10} more (Pro)`));
   console.log("");
 
-  // FEATURES
+  /* ------------------ FEATURES ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  FEATURES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
@@ -193,7 +215,7 @@ export async function runAudit(root) {
     console.log(pc.magenta(`+${features.length - 10} more (Pro)`));
   console.log("");
 
-  // UI SYSTEM
+  /* ------------------ UI SYSTEM ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  UI SYSTEM")));
   console.log(pc.cyan("────────────────────────────────────────"));
@@ -201,63 +223,51 @@ export async function runAudit(root) {
   else console.log("None detected");
   console.log("");
 
-  // RELATIONSHIPS
+  /* ------------------ RELATIONSHIPS ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  COMPONENT RELATIONSHIPS (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
-
   relationships.forEach((line) => console.log("• " + line));
-
   if (relationshipsTotal > relationships.length)
     console.log(
       pc.magenta(`+${relationshipsTotal - relationships.length} more (Pro)`)
     );
-
   console.log("");
 
-  // DUPLICATES
+  /* ------------------ DUPLICATES ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  POSSIBLE DUPLICATES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
-
   duplicates.preview.forEach((d) => console.log("• " + d));
-
   if (duplicates.total > duplicates.preview.length)
     console.log(
       pc.magenta(`+${duplicates.total - duplicates.preview.length} more (Pro)`)
     );
-
   console.log("");
 
-  // DEAD FILES
+  /* ------------------ DEAD FILES ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  DEAD FILES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
-
   deadFiles.preview.forEach((d) => console.log("• " + d));
-
   if (deadFiles.total > deadFiles.preview.length)
     console.log(
       pc.magenta(`+${deadFiles.total - deadFiles.preview.length} more (Pro)`)
     );
-
   console.log("");
 
-  // UNUSED DEPS
+  /* ------------------ UNUSED DEPENDENCIES ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  UNUSED DEPENDENCIES (Preview)")));
   console.log(pc.cyan("────────────────────────────────────────"));
-
   unusedDeps.preview.forEach((d) => console.log("• " + d));
-
   if (unusedDeps.total > unusedDeps.preview.length)
     console.log(
       pc.magenta(`+${unusedDeps.total - unusedDeps.preview.length} more (Pro)`)
     );
-
   console.log("");
 
-  // STRUCTURE HINTS
+  /* ------------------ STRUCTURE HINTS ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  STRUCTURE HINTS (Lite)")));
   console.log(pc.cyan("────────────────────────────────────────"));
@@ -266,7 +276,7 @@ export async function runAudit(root) {
   else console.log("No structural issues detected.");
   console.log("");
 
-  // END
+  /* ------------------ SUMMARY ------------------ */
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  FRIENDLY SUMMARY")));
   console.log(pc.cyan("────────────────────────────────────────"));
@@ -281,9 +291,9 @@ export async function runAudit(root) {
   return summary;
 }
 
-// ======================================================
-// FILE SCANNER (IGNORES NODE_MODULES, GIT, DIST, ETC.)
-// ======================================================
+/* ============================================================
+   FILE SCANNER
+   ============================================================ */
 async function collectFiles(root) {
   const list = [];
 
@@ -301,6 +311,8 @@ async function collectFiles(root) {
   ];
 
   function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+
     const items = fs.readdirSync(dir);
 
     for (const item of items) {
@@ -309,11 +321,8 @@ async function collectFiles(root) {
       const full = path.join(dir, item);
       const stat = fs.statSync(full);
 
-      if (stat.isDirectory()) {
-        walk(full);
-      } else {
-        list.push(full.replace(root, ""));
-      }
+      if (stat.isDirectory()) walk(full);
+      else list.push(full.replace(root, ""));
     }
   }
 

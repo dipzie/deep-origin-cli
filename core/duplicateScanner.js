@@ -33,26 +33,24 @@ import { pickStablePreview } from "./hashUtils.js";
 export function scanDuplicates(root, { components = [], project }) {
   if (!Array.isArray(components)) components = [];
 
-  const nameMap = new Map();
+  const map = new Map();
 
   for (const comp of components) {
     const base = path.basename(comp).toLowerCase();
-    if (!nameMap.has(base)) nameMap.set(base, []);
-    nameMap.get(base).push(comp);
+    if (!map.has(base)) map.set(base, []);
+    map.get(base).push(comp);
   }
 
   const duplicates = [];
 
-  for (const [name, files] of nameMap) {
+  for (const [name, files] of map) {
     if (files.length > 1) {
       duplicates.push(`Possible duplicate: ${files[0]}`);
     }
   }
 
-  const preview = pickStablePreview(duplicates, 3, project, "DUP_LITE");
-
   return {
-    preview,
+    preview: pickStablePreview(duplicates, 3, project, "DUP"),
     total: duplicates.length,
   };
 }

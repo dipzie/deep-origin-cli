@@ -27,31 +27,56 @@
  * ─────────────────────────────────────────────────────────────
  */
 
-import fs from "fs-extra";
+/*
+ * STRUCTURE HINT ENGINE — Lite Mode
+ * Shows EXACT 1 helpful hint per category (Lite)
+ */
+
 import path from "path";
 
 export function generateStructureHints(root) {
   const hints = [];
 
-  const deepPaths = [];
+  /* ----------------------------------------------
+     1. Deep Folder Nesting Detection (1 hint)
+     ---------------------------------------------- */
+  function checkNested(dir, depth = 0) {
+    if (depth >= 4) return dir; // trigger
+    if (!dir || !fs.existsSync(dir)) return null;
 
-  function walk(dir) {
-    const items = fs.readdirSync(dir);
-    for (const i of items) {
-      const full = path.join(dir, i);
-      const stat = fs.statSync(full);
+    const entries = fs.readdirSync(dir);
 
-      if (stat.isDirectory()) walk(full);
-
-      const depth = full.replace(root, "").split("/").length;
-      if (depth > 6) deepPaths.push(full);
+    for (const entry of entries) {
+      const full = path.join(dir, entry);
+      if (fs.statSync(full).isDirectory()) {
+        const res = checkNested(full, depth + 1);
+        if (res) return res;
+      }
     }
+    return null;
   }
 
-  walk(path.join(root, "src"));
+  const nested = checkNested(root);
+  if (nested) hints.push(`Deep nesting detected → ${nested.replace(root, "")}`);
 
-  if (deepPaths.length > 0) {
-    hints.push("Deep nesting detected — flattening may improve clarity.");
+  /* ----------------------------------------------
+     2. Page placed in /src/pages but looks like component
+     ---------------------------------------------- */
+  const pagesDir = path.join(root, "src/pages");
+  if (fs.existsSync(pagesDir)) {
+    const pages = fs.readdirSync(pagesDir);
+
+    const wrong = pages.find(
+      (p) =>
+        p.toLowerCase().includes("button") ||
+        p.toLowerCase().includes("card") ||
+        p.toLowerCase().includes("modal")
+    );
+
+    if (wrong)
+      hints.push(
+        `/src/pages/${wrong} looks like a Component — move to /src/components`
+      );
   }
 
   return hints;
