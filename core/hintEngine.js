@@ -31,7 +31,7 @@
  * STRUCTURE HINT ENGINE — Lite Mode
  * Shows EXACT 1 helpful hint per category (Lite)
  */
-
+import fs from "fs-extra";
 import path from "path";
 
 export function generateStructureHints(root) {
