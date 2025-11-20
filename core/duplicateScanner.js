@@ -27,16 +27,32 @@
  * ─────────────────────────────────────────────────────────────
  */
 
+import path from "path";
 import { pickStablePreview } from "./hashUtils.js";
 
-export function scanDuplicates({ components, project }) {
-  const dupes = [];
+export function scanDuplicates(root, { components = [], project }) {
+  if (!Array.isArray(components)) components = [];
 
-  for (const c of components) {
-    if (c.toLowerCase().includes("copy")) {
-      dupes.push(`Possible duplicate: ${c}`);
+  const nameMap = new Map();
+
+  for (const comp of components) {
+    const base = path.basename(comp).toLowerCase();
+    if (!nameMap.has(base)) nameMap.set(base, []);
+    nameMap.get(base).push(comp);
+  }
+
+  const duplicates = [];
+
+  for (const [name, files] of nameMap) {
+    if (files.length > 1) {
+      duplicates.push(`Possible duplicate: ${files[0]}`);
     }
   }
 
-  return pickStablePreview(dupes, 1, project, "DUP_LITE");
+  const preview = pickStablePreview(duplicates, 3, project, "DUP_LITE");
+
+  return {
+    preview,
+    total: duplicates.length,
+  };
 }
