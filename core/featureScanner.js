@@ -27,18 +27,37 @@
  * ─────────────────────────────────────────────────────────────
  */
 
+/*
+ * Origin Lite — Feature Scanner (SAFE)
+ * Always returns an ARRAY of feature folder names.
+ */
+
 import fs from "fs-extra";
 import path from "path";
 
 export function scanFeatures(root) {
   const dir = path.join(root, "src", "features");
+
   if (!fs.existsSync(dir)) return [];
 
   const items = fs.readdirSync(dir);
-  return items
-    .filter((i) => {
-      const full = path.join(dir, i);
-      return fs.statSync(full).isDirectory();
-    })
-    .filter((f) => !["utils", "helpers", "common", "shared"].includes(f)); // avoid noise
+  const results = [];
+
+  for (const item of items) {
+    const full = path.join(dir, item);
+
+    try {
+      const stat = fs.statSync(full);
+      if (!stat.isDirectory()) continue;
+    } catch {
+      continue; // skip corrupted entries
+    }
+
+    // ignore generic folders
+    if (["utils", "helpers", "common", "shared"].includes(item)) continue;
+
+    results.push(item);
+  }
+
+  return results;
 }

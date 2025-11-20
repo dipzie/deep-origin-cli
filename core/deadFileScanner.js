@@ -27,20 +27,47 @@
  * ─────────────────────────────────────────────────────────────
  */
 
-import fs from "fs";
+import fs from "fs-extra";
 import path from "path";
 import { pickStablePreview } from "./hashUtils.js";
 
-export function scanDeadFiles(root, { allFiles, project }) {
-  // LITE heuristic-based unused file detection
-  const unused = allFiles.filter((f) => {
-    return (
-      f.includes("Old") ||
-      f.includes("unused") ||
-      f.includes("deprecated") ||
-      f.includes("backup")
-    );
-  });
+export function scanDeadFiles(root, { project }) {
+  // Scan entire src folder for filename patterns
+  const unused = [];
+  const SRC = path.join(root, "src");
 
-  return pickStablePreview(unused, 5, project, "DEAD_LITE");
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
+
+    const items = fs.readdirSync(dir);
+
+    for (const item of items) {
+      const full = path.join(dir, item);
+      const stat = fs.statSync(full);
+
+      if (stat.isDirectory()) {
+        walk(full);
+      } else {
+        const filename = full.toLowerCase();
+
+        if (
+          filename.includes("old") ||
+          filename.includes("unused") ||
+          filename.includes("deprecated") ||
+          filename.includes("backup")
+        ) {
+          unused.push(full.replace(root, "").replace(/\\/g, "/"));
+        }
+      }
+    }
+  }
+
+  walk(SRC);
+
+  const preview = pickStablePreview(unused, 5, project, "DEAD_LITE");
+
+  return {
+    preview,
+    total: unused.length,
+  };
 }
