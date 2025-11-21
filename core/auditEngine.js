@@ -29,8 +29,14 @@ import pc from "picocolors";
 import { detectFramework } from "./frameworkDetector.js";
 import { scanComponents } from "./componentScanner.js";
 import { scanPages } from "./pageScanner.js";
+import { scanNextPages } from "./nextPageScanner.js";
 import { scanFeatures } from "./featureScanner.js";
+
 import { detectUISystem } from "./uiScanner.js";
+import { detectAdvancedUI } from "./uiDetectorAdvanced.js";
+
+import { scanRouting } from "./routingDetector.js";
+
 import { generateStructureHints } from "./hintEngine.js";
 import { generateSummary, computeHealthScore } from "./summaryGenerator.js";
 
@@ -40,7 +46,7 @@ import { scanDeadFiles } from "./deadFileScanner.js";
 import { scanUnusedDependencies } from "./unusedDepsScanner.js";
 
 /* ============================================================
-   CLEAN FILE LIST FOR BRIDGE + HISTORY
+   FILTER BRIDGE/HISTORY FILES
    ============================================================ */
 function filterBridgeFiles(files = []) {
   if (!Array.isArray(files)) return [];
@@ -64,6 +70,113 @@ function filterBridgeFiles(files = []) {
 }
 
 /* ============================================================
+   UNIVERSAL SECTION PRINTER
+   Supports:
+   - Simple arrays
+   - { preview, total }
+   ============================================================ */
+function printSection(title, data, limit = 10) {
+  if (!data) return;
+
+  let items = [];
+  let total = 0;
+
+  // Format A: array
+  if (Array.isArray(data)) {
+    items = data;
+    total = data.length;
+  }
+
+  // Format B: { preview: [], total: N }
+  else if (typeof data === "object" && data.preview) {
+    items = data.preview;
+    total = data.total || data.preview.length;
+  }
+
+  if (total === 0) return;
+
+  console.log(pc.cyan("────────────────────────────────────────"));
+  console.log(pc.bold(pc.white(`  ${title}`)));
+  console.log(pc.cyan("────────────────────────────────────────"));
+
+  items.slice(0, limit).forEach((i) => console.log("• " + i));
+
+  if (total > limit) {
+    console.log(pc.magenta(`+${total - limit} more (Pro)`));
+  }
+
+  console.log("");
+}
+
+/* ============================================================
+   HINTS PRINTER (Lite)
+   ============================================================ */
+function printHints(title, hints, limit = 6) {
+  console.log(pc.cyan("────────────────────────────────────────"));
+  console.log(pc.bold(pc.white(`  ${title}`)));
+  console.log(pc.cyan("────────────────────────────────────────"));
+
+  if (!hints || hints.length === 0) {
+    console.log("No structural issues detected.\n");
+    return;
+  }
+
+  const items = Array.isArray(hints) ? hints : hints.hints;
+
+  items.slice(0, limit).forEach((h) => console.log(pc.yellow("⚠ " + h)));
+
+  if (items.length > limit) {
+    console.log(pc.magenta(`+${items.length - limit} more (Pro)`));
+  }
+
+  console.log("");
+}
+
+/* ============================================================
+   MODULE 5 — EXPERIENCE ENGINE
+   ============================================================ */
+function getArchitecture(framework) {
+  if (framework.includes("Next.js")) return "Fullstack";
+  return "Frontend";
+}
+
+function getFrameworkBadge(framework) {
+  if (framework.includes("Next")) return "⚡ Next.js";
+  if (framework.includes("React")) return "⚛️ React";
+  if (framework.includes("Vite")) return "⚡ Vite";
+  return "📦 Unknown";
+}
+
+function evaluateUXQuality(meta) {
+  if (!meta) return "Clean structure.";
+
+  if (meta.totalScore <= 2) return "Very clean — minimal structural issues.";
+  if (meta.totalScore <= 6) return "Clean — a few minor issues found.";
+  if (meta.totalScore <= 12) return "Structure needs light cleanup.";
+
+  return "Several issues detected — consider reorganizing.";
+}
+
+function generateSmartTip(meta) {
+  if (!meta) return "Tip: Project looks stable.";
+
+  if (meta.deepNesting > 0)
+    return "Tip: Flatten deep folder nesting to improve maintainability.";
+
+  if (meta.mixedExt)
+    return "Tip: Avoid mixing JS and TS files to keep consistency.";
+
+  if (meta.emptyFolders > 0)
+    return "Tip: Remove empty folders to reduce noise.";
+
+  return "Tip: Structure is stable — no major adjustments needed.";
+}
+
+function motivationLine() {
+  return "You're building momentum — keep going! 🚀";
+}
+
+/* ============================================================
    MAIN AUDIT ENGINE
    ============================================================ */
 export async function runAudit(root) {
@@ -76,46 +189,41 @@ export async function runAudit(root) {
   console.log(pc.green("✔ Project loaded"));
   console.log(pc.dim("Scanning framework, components, pages, features...\n"));
 
-  // ALWAYS SAFE VALUES
+  /* ------------------ Base Predictors ------------------ */
   const framework = detectFramework(root) || "Unknown";
-  const components = scanComponents(root) || [];
-  const pages = scanPages(root) || [];
-  const features = scanFeatures(root) || [];
-  const ui = detectUISystem(root) || [];
-  const hints = generateStructureHints(root) || [];
 
-  // NEW scanners (all safe)
-  const rel = scanComponentRelationships(root, {
-    components: Array.isArray(components) ? components : [],
-    project,
-  });
+  const pages = framework.includes("Next.js")
+    ? scanNextPages(root)
+    : scanPages(root);
+
+  const components = scanComponents(root) || [];
+  const features = scanFeatures(root) || [];
+  const routing = scanRouting(root) || [];
+
+  const uiBasic = detectUISystem(root) || [];
+  const uiAdvanced = detectAdvancedUI(root) || [];
+  const ui = [...new Set([...uiBasic, ...uiAdvanced])];
+
+  const { hints, meta } = generateStructureHints(root);
+
+  /* ------------------ Secondary Scanners ------------------ */
+  const rel = scanComponentRelationships(root, { components, project });
   const relationships = rel.preview || [];
   const relationshipsTotal = rel.total || 0;
 
-  const duplicates = scanDuplicates(root, {
-    components: Array.isArray(components) ? components : [],
-    project,
-  });
-
+  const duplicates = scanDuplicates(root, { components, project });
   const deadFiles = scanDeadFiles(root, {
     allFiles: Array.isArray(files) ? files : [],
     project,
   });
-
   const unusedDeps = scanUnusedDependencies(root, { project });
 
   console.log(pc.green("✔ Base scanning complete\n"));
 
-  const backendExists =
-    fs.existsSync(path.join(root, "src", "backend")) ||
-    fs.existsSync(path.join(root, "server")) ||
-    fs.existsSync(path.join(root, "api")) ||
-    fs.existsSync(path.join(root, "backend"));
-
   const filteredFiles = filterBridgeFiles(files);
 
   /* ============================================================
-     GENERATE MARKDOWN SUMMARY
+     SUMMARY + HISTORY
      ============================================================ */
   const summary = generateSummary({
     project,
@@ -126,7 +234,7 @@ export async function runAudit(root) {
     features,
     ui,
     hints,
-    backendExists,
+    meta, // MODULE 5
     relationships,
     relationshipsTotal,
     duplicates,
@@ -135,17 +243,12 @@ export async function runAudit(root) {
     timestamp: new Date().toISOString(),
   });
 
-  /* ============================================================
-     SAVE SUMMARY + HISTORY
-     ============================================================ */
   fs.ensureDirSync(path.join(root, "docs/ai"));
   fs.writeFileSync(path.join(root, "docs/ai/bridge_summary.md"), summary);
 
-  console.log(pc.green(`📄 Summary saved → docs/ai/bridge_summary.md`));
-
-  fs.ensureDirSync(path.join(root, "docs/audit_history"));
   const id = Date.now().toString();
 
+  fs.ensureDirSync(path.join(root, "docs/audit_history"));
   fs.writeJsonSync(
     path.join(root, "docs/audit_history", `audit_${id}.json`),
     {
@@ -157,6 +260,7 @@ export async function runAudit(root) {
       features,
       ui,
       hints,
+      meta,
       relationships,
       relationshipsTotal,
       duplicates,
@@ -172,119 +276,76 @@ export async function runAudit(root) {
   );
 
   /* ============================================================
-     HEALTH SCORE (Lite)
+     HEALTH SCORE
      ============================================================ */
   const health = computeHealthScore({
     features,
     ui,
     hints,
-    framework,
   });
 
   /* ============================================================
-     CLEAN CONSOLE OUTPUT
+     OUTPUT (Dynamic + Lite-Safe)
      ============================================================ */
 
+  // Overview
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  PROJECT OVERVIEW")));
   console.log(pc.cyan("────────────────────────────────────────"));
-
   console.log(pc.white(`Project:      `) + pc.green(project));
-  console.log(
-    pc.white(`Files:        `) + pc.green(filteredFiles.length.toString())
-  );
+  console.log(pc.white(`Files:        `) + pc.green(filteredFiles.length));
   console.log(pc.white(`Framework:    `) + pc.green(framework));
   console.log(pc.white(`Health:       `) + pc.green(`${health}%`));
   console.log("");
 
-  /* ------------------ PAGES ------------------ */
+  /* ---------------- EXPERIENCE BLOCK (Module 5) ---------------- */
+  const architecture = getArchitecture(framework);
+
   console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  PAGES (Preview)")));
+  console.log(pc.bold(pc.white("  EXPERIENCE")));
   console.log(pc.cyan("────────────────────────────────────────"));
-  pages.slice(0, 10).forEach((p) => console.log("• " + p));
-  if (pages.length > 10)
-    console.log(pc.magenta(`+${pages.length - 10} more (Pro)`));
+  console.log(`Architecture: ${architecture}`);
+  console.log(`Framework Badge: ${getFrameworkBadge(framework)}`);
+  console.log(`UX Quality: ${evaluateUXQuality(meta)}`);
+  console.log(generateSmartTip(meta));
   console.log("");
 
-  /* ------------------ FEATURES ------------------ */
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  FEATURES (Preview)")));
-  console.log(pc.cyan("────────────────────────────────────────"));
-  features.slice(0, 10).forEach((f) => console.log("• " + f));
-  if (features.length > 10)
-    console.log(pc.magenta(`+${features.length - 10} more (Pro)`));
-  console.log("");
+  /* ---------------- PREVIEW SECTIONS ---------------- */
+  printSection("PAGES (Preview)", pages);
+  printSection("FEATURES (Preview)", features);
+  printSection("ROUTING (Preview)", routing);
 
-  /* ------------------ UI SYSTEM ------------------ */
+  // UI SYSTEM
   console.log(pc.cyan("────────────────────────────────────────"));
   console.log(pc.bold(pc.white("  UI SYSTEM")));
   console.log(pc.cyan("────────────────────────────────────────"));
-  if (ui.length) ui.forEach((u) => console.log("• " + u));
+  if (ui.length > 0) ui.forEach((u) => console.log("• " + u));
   else console.log("None detected");
   console.log("");
 
-  /* ------------------ RELATIONSHIPS ------------------ */
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  COMPONENT RELATIONSHIPS (Preview)")));
-  console.log(pc.cyan("────────────────────────────────────────"));
-  relationships.forEach((line) => console.log("• " + line));
-  if (relationshipsTotal > relationships.length)
+  printSection("COMPONENTS (Preview)", components);
+  printSection("COMPONENT RELATIONSHIPS (Preview)", relationships);
+
+  // Extra Pro counter for relationships
+  if (relationshipsTotal > relationships.length) {
     console.log(
       pc.magenta(`+${relationshipsTotal - relationships.length} more (Pro)`)
     );
+    console.log("");
+  }
+
+  printSection("POSSIBLE DUPLICATES (Preview)", duplicates);
+  printSection("DEAD FILES (Preview)", deadFiles);
+  printSection("UNUSED DEPENDENCIES (Preview)", unusedDeps);
+
+  printHints("STRUCTURE HINTS (Lite)", hints);
+
+  /* ---------------- MOTIVATION (Module 5) ---------------- */
+  console.log(pc.cyan("────────────────────────────────────────"));
+  console.log(pc.bold(pc.white("  MOTIVATION")));
+  console.log(pc.cyan("────────────────────────────────────────"));
+  console.log(motivationLine());
   console.log("");
-
-  /* ------------------ DUPLICATES ------------------ */
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  POSSIBLE DUPLICATES (Preview)")));
-  console.log(pc.cyan("────────────────────────────────────────"));
-  duplicates.preview.forEach((d) => console.log("• " + d));
-  if (duplicates.total > duplicates.preview.length)
-    console.log(
-      pc.magenta(`+${duplicates.total - duplicates.preview.length} more (Pro)`)
-    );
-  console.log("");
-
-  /* ------------------ DEAD FILES ------------------ */
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  DEAD FILES (Preview)")));
-  console.log(pc.cyan("────────────────────────────────────────"));
-  deadFiles.preview.forEach((d) => console.log("• " + d));
-  if (deadFiles.total > deadFiles.preview.length)
-    console.log(
-      pc.magenta(`+${deadFiles.total - deadFiles.preview.length} more (Pro)`)
-    );
-  console.log("");
-
-  /* ------------------ UNUSED DEPENDENCIES ------------------ */
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  UNUSED DEPENDENCIES (Preview)")));
-  console.log(pc.cyan("────────────────────────────────────────"));
-  unusedDeps.preview.forEach((d) => console.log("• " + d));
-  if (unusedDeps.total > unusedDeps.preview.length)
-    console.log(
-      pc.magenta(`+${unusedDeps.total - unusedDeps.preview.length} more (Pro)`)
-    );
-  console.log("");
-
-  /* ------------------ STRUCTURE HINTS ------------------ */
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  STRUCTURE HINTS (Lite)")));
-  console.log(pc.cyan("────────────────────────────────────────"));
-
-  if (hints.length) hints.forEach((h) => console.log(pc.yellow("⚠ " + h)));
-  else console.log("No structural issues detected.");
-  console.log("");
-
-  /* ------------------ SUMMARY ------------------ */
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(pc.bold(pc.white("  FRIENDLY SUMMARY")));
-  console.log(pc.cyan("────────────────────────────────────────"));
-  console.log(
-    `Looks like a ${framework} project with${
-      features.length ? " modular features." : " basic structure."
-    }\n`
-  );
 
   console.log(pc.green("✨ Audit complete — great progress!\n"));
 
@@ -313,9 +374,7 @@ async function collectFiles(root) {
   function walk(dir) {
     if (!fs.existsSync(dir)) return;
 
-    const items = fs.readdirSync(dir);
-
-    for (const item of items) {
+    for (const item of fs.readdirSync(dir)) {
       if (IGNORE.includes(item)) continue;
 
       const full = path.join(dir, item);

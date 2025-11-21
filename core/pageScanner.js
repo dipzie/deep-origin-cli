@@ -33,23 +33,58 @@ import path from "path";
 const EXT = [".tsx", ".jsx", ".ts", ".js"];
 
 export function scanPages(root) {
-  const pagesDir = path.join(root, "src", "pages");
   const results = [];
 
-  if (!fs.existsSync(pagesDir)) return results;
+  const pagesDir = path.join(root, "src", "pages");
+  const srcDir = path.join(root, "src");
 
-  const items = fs.readdirSync(pagesDir);
-  for (const item of items) {
-    const full = path.join(pagesDir, item);
-    const stat = fs.statSync(full);
+  function isPageFile(file) {
+    return EXT.includes(path.extname(file));
+  }
 
-    if (!stat.isFile()) continue;
+  // Scan /src/pages recursively
+  function walk(dir) {
+    if (!fs.existsSync(dir)) return;
 
-    const ext = path.extname(item);
-    if (EXT.includes(ext)) {
-      results.push("/src/pages/" + item);
+    const items = fs.readdirSync(dir);
+    for (const item of items) {
+      const full = path.join(dir, item);
+      const stat = fs.statSync(full);
+
+      if (stat.isDirectory()) {
+        walk(full);
+      } else if (isPageFile(item)) {
+        const rel = full.replace(root, "").replace(/\\/g, "/");
+        results.push(rel);
+      }
     }
   }
 
-  return results;
+  walk(pagesDir);
+
+  // Balanced: detect page-like files outside /pages
+  // Example: DashboardPage.tsx, LoginPage.tsx
+  function detectExtraPages(dir) {
+    if (!fs.existsSync(dir)) return [];
+
+    const items = fs.readdirSync(dir);
+    const extra = [];
+
+    const pagePattern = /(Page|page)\.(tsx|jsx|ts|js)$/;
+
+    for (const item of items) {
+      const full = path.join(dir, item);
+      const stat = fs.statSync(full);
+
+      if (stat.isDirectory()) continue; // avoid folders
+      if (pagePattern.test(item)) {
+        extra.push(full.replace(root, "").replace(/\\/g, "/"));
+      }
+    }
+
+    return extra;
+  }
+  const extraPages = detectExtraPages(srcDir);
+
+  return [...new Set([...results, ...extraPages])];
 }

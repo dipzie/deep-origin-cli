@@ -31,53 +31,101 @@ import fs from "fs-extra";
 import path from "path";
 
 export function detectUISystem(root) {
-  const pkgPath = path.join(root, "package.json");
-  if (!fs.existsSync(pkgPath)) return [];
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+  const results = [];
 
-  const detected = [];
+  /* ------------------------------------------------------------------
+     Helper: scan deps from package.json
+  ------------------------------------------------------------------ */
+  let pkg = {};
+  try {
+    pkg = fs.readJsonSync(path.join(root, "package.json"));
+  } catch {
+    pkg = {};
+  }
 
   const deps = {
     ...pkg.dependencies,
     ...pkg.devDependencies,
   };
 
-  const has = (name) => deps && deps[name];
+  const has = (name) => {
+    return deps && deps[name];
+  };
 
-  // Existing libraries
-  if (has("@mui/material")) detected.push("Material UI");
-  if (has("antd")) detected.push("Ant Design");
-  if (has("@chakra-ui/react")) detected.push("Chakra UI");
-  if (has("@mantine/core")) detected.push("Mantine");
-  if (has("@radix-ui/react-dropdown-menu")) detected.push("Radix UI");
-  if (has("primereact")) detected.push("PrimeReact");
-  if (has("@headlessui/react")) detected.push("Headless UI");
-  if (has("bootstrap")) detected.push("Bootstrap React");
-  if (has("styled-components")) detected.push("Styled Components");
-  if (has("@emotion/react")) detected.push("Emotion");
-  if (has("@vanilla-extract/css")) detected.push("Vanilla Extract");
-
-  // Tailwind
+  /* ------------------------------------------------------------------
+     1. TailwindCSS
+  ------------------------------------------------------------------ */
+  if (has("tailwindcss")) results.push("TailwindCSS");
   if (fs.existsSync(path.join(root, "tailwind.config.js")))
-    detected.push("TailwindCSS");
+    results.push("TailwindCSS");
+  if (fs.existsSync(path.join(root, "tailwind.config.cjs")))
+    results.push("TailwindCSS");
 
-  // Shadcn
-  if (fs.existsSync(path.join(root, "src/components/ui")))
-    detected.push("Shadcn UI");
-
-  // DaisyUI via tailwind plugin
-  const twPath = path.join(root, "tailwind.config.js");
-  if (fs.existsSync(twPath)) {
-    const tw = fs.readFileSync(twPath, "utf8");
-    if (tw.includes("daisyui")) detected.push("DaisyUI");
+  /* ------------------------------------------------------------------
+     2. Shadcn UI
+  ------------------------------------------------------------------ */
+  if (
+    has("class-variance-authority") ||
+    fs.existsSync(path.join(root, "components.json"))
+  ) {
+    results.push("Shadcn UI");
   }
 
-  // Small additions
-  if (has("flowbite")) detected.push("Flowbite");
-  if (has("lucide-react")) detected.push("Lucide Icons");
-  if (has("@heroicons/react")) detected.push("Heroicons");
-  if (has("recharts")) detected.push("Recharts");
-  if (has("zustand")) detected.push("Zustand (State)");
+  /* ------------------------------------------------------------------
+     3. Radix UI
+  ------------------------------------------------------------------ */
+  if (has("@radix-ui/react-dropdown-menu")) results.push("Radix UI");
+  if (has("@radix-ui/react-dialog")) results.push("Radix UI");
+  if (has("@radix-ui/react-hover-card")) results.push("Radix UI");
 
-  return detected;
+  /* ------------------------------------------------------------------
+     4. Material UI
+  ------------------------------------------------------------------ */
+  if (has("@mui/material") || has("@material-ui/core"))
+    results.push("Material UI");
+
+  /* ------------------------------------------------------------------
+     5. Bootstrap
+  ------------------------------------------------------------------ */
+  if (has("bootstrap")) results.push("Bootstrap");
+
+  /* ------------------------------------------------------------------
+     6. Ant Design
+  ------------------------------------------------------------------ */
+  if (has("antd")) results.push("Ant Design");
+
+  /* ------------------------------------------------------------------
+     7. Chakra UI
+  ------------------------------------------------------------------ */
+  if (has("@chakra-ui/react")) results.push("Chakra UI");
+
+  /* ------------------------------------------------------------------
+     8. Styled Components
+  ------------------------------------------------------------------ */
+  if (has("styled-components")) results.push("Styled Components");
+
+  /* ------------------------------------------------------------------
+     9. Emotion
+  ------------------------------------------------------------------ */
+  if (has("@emotion/react") || has("@emotion/styled")) results.push("Emotion");
+
+  /* ------------------------------------------------------------------
+     10. Vanilla Extract
+  ------------------------------------------------------------------ */
+  if (has("@vanilla-extract/css")) results.push("Vanilla Extract");
+
+  /* ------------------------------------------------------------------
+     11. DaisyUI
+  ------------------------------------------------------------------ */
+  if (has("daisyui")) results.push("DaisyUI");
+
+  /* ------------------------------------------------------------------
+     12. Flowbite
+  ------------------------------------------------------------------ */
+  if (has("flowbite") || has("flowbite-react")) results.push("Flowbite");
+
+  /* ------------------------------------------------------------------
+     Final (unique + sorted)
+  ------------------------------------------------------------------ */
+  return [...new Set(results)];
 }

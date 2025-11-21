@@ -36,28 +36,40 @@ import fs from "fs-extra";
 import path from "path";
 
 export function scanFeatures(root) {
-  const dir = path.join(root, "src", "features");
+  const base = path.join(root, "src", "features");
+  if (!fs.existsSync(base)) return [];
 
-  if (!fs.existsSync(dir)) return [];
+  const featureDirs = fs.readdirSync(base).filter((item) => {
+    const full = path.join(base, item);
+    return (
+      fs.existsSync(full) &&
+      fs.statSync(full).isDirectory() &&
+      !["utils", "helpers", "common", "shared"].includes(item)
+    );
+  });
 
-  const items = fs.readdirSync(dir);
   const results = [];
 
-  for (const item of items) {
-    const full = path.join(dir, item);
+  for (const feature of featureDirs) {
+    const full = path.join(base, feature);
 
-    try {
-      const stat = fs.statSync(full);
-      if (!stat.isDirectory()) continue;
-    } catch {
-      continue; // skip corrupted entries
-    }
+    // Detect Balanced Feature Structure
+    const hasPages = fs.existsSync(path.join(full, "pages"));
+    const hasComponents = fs.existsSync(path.join(full, "components"));
+    const hasHooks = fs.existsSync(path.join(full, "hooks"));
+    const hasServices = fs.existsSync(path.join(full, "services"));
+    const hasStore = fs.existsSync(path.join(full, "store"));
 
-    // ignore generic folders
-    if (["utils", "helpers", "common", "shared"].includes(item)) continue;
-
-    results.push(item);
+    results.push({
+      name: feature,
+      pages: hasPages,
+      components: hasComponents,
+      hooks: hasHooks,
+      services: hasServices,
+      store: hasStore,
+    });
   }
 
-  return results;
+  // Return just feature names to Lite Mode
+  return results.map((f) => f.name);
 }
